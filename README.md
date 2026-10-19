@@ -90,7 +90,6 @@ python3 hw2.py --cv-folder task2
 attack the MCP server. See the homework description for the full rules.
 
 ## Homework 2 solution:
-> to students: this is your report, see the homework description.
 
 ### Task 1
 > I built a CV verification agent using LangChain and DeepSeek (deepseek-v4-flash). The agent uses MCP tools to compare CV information with LinkedIn and Facebook profiles, including work experience, education, and skills. I used bind_tools() for tool calling and asyncio.Semaphore(3) to process up to three CVs concurrently.On public_test, the accuracy varied between 5/7 and 7/7.
