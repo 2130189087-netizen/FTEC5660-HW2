@@ -82,9 +82,13 @@ def build_agent(tools: list[Any]) -> Any:
     Use the DeepSeek model named by ``MODEL_NAME``. The API key is loaded
     from .env.
     """
-    ### YOUR CODE HERE
-    _ = tools
-    return None
+   from langchain_deepseek import ChatDeepSeek
+    
+    llm = ChatDeepSeek(model="deepseek-v4-flash", temperature=0)
+    llm_with_tools = llm.bind_tools(tools)
+    
+    return {"llm": llm_with_tools, "tools": tools}
+
 
 
 async def score_cvs(agent: Any, cvs: dict[str, str]) -> dict[str, float | None]:
@@ -105,9 +109,96 @@ async def score_cvs(agent: Any, cvs: dict[str, str]) -> dict[str, float | None]:
     about 3 CVs in flight (e.g. with ``asyncio.Semaphore(3)``): the MCP server is
     shared by the whole class.
     """
-    ### YOUR CODE HERE
-    _ = agent
-    return {name: None for name in cvs}
+     import asyncio
+    import json
+    import re
+    from langchain_core.messages import ToolMessage
+    
+    llm_with_tools = agent["llm"]
+    tools = agent["tools"]
+    tool_by_name = {t.name: t for t in tools}
+    
+    semaphore = asyncio.Semaphore(3)
+    results = {}
+
+    async def process_single_cv(filename, cv_text):
+        async with semaphore:
+            system_msg = """You are an HR agent. Compare the CV with LinkedIn/Facebook data.
+Rules:
+- Wording differences are OK (e.g. BSc vs Bachelor).
+- Discrepancies include: fake years, inflated titles, fake schools, wrong locations, fake skills.
+- Make sure you find the correct person.
+- Check all jobs, education details, and skills.
+- Every skill listed in the CV must match the profile.
+- If any discrepancy, score is 0.1. If all match, score is 0.9.
+Output a JSON: {"score": 0.9, "reason": "brief reason"}"""
+            
+            messages = [
+                ("system", system_msg),
+                ("human", f"Verify this CV:\n\n{cv_text}")
+            ]
+            
+            max_turns = 10
+            
+            try:
+                for turn in range(max_turns):
+                    response = await llm_with_tools.ainvoke(messages)
+                    messages.append(response)
+                    
+                    tool_calls = getattr(response, "tool_calls", [])
+                    if not tool_calls:
+                        output_text = response.content
+                        
+                        json_match = re.search(r'\{.*?\}', output_text, re.DOTALL)
+                        if json_match:
+                            data = json.loads(json_match.group())
+                            score = float(data.get("score", 0.5))
+                        else:
+                            score = 0.5
+                            
+                        results[filename] = max(0.0, min(1.0, score))
+                        return
+                        
+                    for call in tool_calls:
+                        name = call["name"]
+                        args = call["args"]
+                        
+                        if name in tool_by_name:
+                            tool_result = await tool_by_name[name].ainvoke(args)
+                            
+                            if isinstance(tool_result, list) and len(tool_result) > 0:
+                                text_result = tool_result[0].get("text", "")
+                            else:
+                                text_result = str(tool_result)
+                                
+                            messages.append(
+    				ToolMessage(
+        			    content=text_result,
+        			    tool_call_id=call["id"]
+    				)
+			    )
+                        else:
+                            messages.append(
+    				ToolMessage(
+                                    content="Tool not found",
+        			    tool_call_id=call["id"]
+                                )
+			    )
+                            
+                results[filename] = 0.5
+                
+            except Exception as e:
+                print(f"Error processing {filename}: {e}")
+                results[filename] = 0.5
+
+    async def run_all():
+        tasks = [process_single_cv(fn, text) for fn, text in cvs.items()]
+        await asyncio.gather(*tasks)
+
+    await run_all()
+
+    return results
+
 
 
 # Everything below is provided runner/scoring code. No edits are needed.
