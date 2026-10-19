@@ -93,8 +93,6 @@ attack the MCP server. See the homework description for the full rules.
 > to students: this is your report, see the homework description.
 
 ### Task 1
-> one paragraph describing your solution, and your results on `public_test`.
 > I built a CV verification agent using LangChain and DeepSeek (deepseek-v4-flash). The agent uses MCP tools to compare CV information with LinkedIn and Facebook profiles, including work experience, education, and skills. I used bind_tools() for tool calling and asyncio.Semaphore(3) to process up to three CVs concurrently.On public_test, the accuracy varied between 5/7 and 7/7.
 ### Task 2
-> the attack techniques you used and why you expect them to work.
 > I used a PDF text extraction attack. I changed Kelly Tsang's visible AIA employment start year from 2022 to 2023, while the extracted PDF text still showed 2022. This could mislead the verification agent because it checks the extracted text rather than the visible PDF. In my local test, the adversarial CV received a reliability score of 0.9.
