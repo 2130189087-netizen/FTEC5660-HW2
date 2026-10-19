@@ -82,11 +82,11 @@ def build_agent(tools: list[Any]) -> Any:
     Use the DeepSeek model named by ``MODEL_NAME``. The API key is loaded
     from .env.
     """
-	from langchain_deepseek import ChatDeepSeek
-	llm = ChatDeepSeek(model="deepseek-v4-flash", temperature=0)
-	llm_with_tools = llm.bind_tools(tools)
+    from langchain_deepseek import ChatDeepSeek
+    llm = ChatDeepSeek(model="deepseek-v4-flash", temperature=0)
+    llm_with_tools = llm.bind_tools(tools)
     
-	return {"llm": llm_with_tools, "tools": tools}
+    return {"llm": llm_with_tools, "tools": tools}
 
 
 
