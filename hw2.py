@@ -83,11 +83,11 @@ def build_agent(tools: list[Any]) -> Any:
     from .env.
     """
     from langchain_deepseek import ChatDeepSeek
+    
     llm = ChatDeepSeek(model="deepseek-v4-flash", temperature=0)
     llm_with_tools = llm.bind_tools(tools)
     
     return {"llm": llm_with_tools, "tools": tools}
-
 
 
 async def score_cvs(agent: Any, cvs: dict[str, str]) -> dict[str, float | None]:
