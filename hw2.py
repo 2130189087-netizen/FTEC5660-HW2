@@ -82,12 +82,11 @@ def build_agent(tools: list[Any]) -> Any:
     Use the DeepSeek model named by ``MODEL_NAME``. The API key is loaded
     from .env.
     """
-   from langchain_deepseek import ChatDeepSeek
+	from langchain_deepseek import ChatDeepSeek
+	llm = ChatDeepSeek(model="deepseek-v4-flash", temperature=0)
+	llm_with_tools = llm.bind_tools(tools)
     
-    llm = ChatDeepSeek(model="deepseek-v4-flash", temperature=0)
-    llm_with_tools = llm.bind_tools(tools)
-    
-    return {"llm": llm_with_tools, "tools": tools}
+	return {"llm": llm_with_tools, "tools": tools}
 
 
 
@@ -109,7 +108,7 @@ async def score_cvs(agent: Any, cvs: dict[str, str]) -> dict[str, float | None]:
     about 3 CVs in flight (e.g. with ``asyncio.Semaphore(3)``): the MCP server is
     shared by the whole class.
     """
-     import asyncio
+    import asyncio
     import json
     import re
     from langchain_core.messages import ToolMessage
